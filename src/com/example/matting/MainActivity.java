@@ -19,6 +19,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Camera;
+import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
 import android.icu.util.Measure;
@@ -53,6 +55,7 @@ public class MainActivity extends Activity implements Callback {
 	private SVDraw svDraw;
 	private android.hardware.Camera mCamera;
 	protected SurfaceHolder sh;
+	private boolean cameraHasCreate = false;
 	
 	private PictureCallback myPictureCallback = new PictureCallback(){
 		@Override
@@ -79,6 +82,9 @@ public class MainActivity extends Activity implements Callback {
                 }
             }
         }
+
+		if(Build.VERSION.SDK_INT <= 10)
+		     sh.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 	
 	
@@ -91,9 +97,10 @@ public class MainActivity extends Activity implements Callback {
 		ivImage = (ImageView) findViewById(R.id.ivImage);
 		sView = (SurfaceView) findViewById(R.id.previewRec);
 		svDraw = (SVDraw) findViewById(R.id.drawRec);
+		
 		ivImage.setVisibility(View.INVISIBLE);
-		sView.setVisibility(View.INVISIBLE);
 		svDraw.setVisibility(View.INVISIBLE);
+		sView.setVisibility(View.INVISIBLE);
 		
 		sh = sView.getHolder();
 		sh.addCallback(this);
@@ -105,29 +112,16 @@ public class MainActivity extends Activity implements Callback {
 		
 		btn_call_camera.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				/*
+				
 				Log.d(TestTAG, "click camera");
 				// 打开矩形画布
-				sView.setVisibility(View.VISIBLE);
+				initCamera();
 				svDraw.setVisibility(View.VISIBLE);
 				svDraw.drawRect();
 				Log.d(TestTAG, "open rect");
 				
-				mCamera = android.hardware.Camera.open();
-				Log.d(TestTAG, "open camera is ok");
-				android.hardware.Camera.Parameters parameters = mCamera.getParameters();
-				Log.d(TestTAG, "in camera call");
-				try {
-					mCamera.setPreviewDisplay(sView.getHolder());
-					mCamera.startPreview();
-					Log.d(TestTAG, "camera set is ok");
-					mCamera.takePicture(null, null, myPictureCallback);
-					Log.d(TestTAG, "take pic is ok");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
 				
-				*/
+				/*
 				
 				//切换至Camera事件
 			    Intent intent = new Intent();
@@ -146,7 +140,7 @@ public class MainActivity extends Activity implements Callback {
 			    Uri uri = Uri.fromFile(photo);
 			    intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
 			    startActivityForResult(intent, 100);
-			    
+			    */
 			}
 		});
 		
@@ -243,6 +237,33 @@ public class MainActivity extends Activity implements Callback {
 			startActivity(intent);
 		}
 	}
+	
+	// 初始化相机
+	// 参考资料https://blog.csdn.net/yanzi1225627/article/details/7926994
+	@SuppressWarnings("deprecation")
+	public void initCamera() {
+		if(mCamera == null && !cameraHasCreate) {
+			mCamera = android.hardware.Camera.open();
+			Log.d(TestTAG, "camera open");
+		}
+		if(mCamera != null && !cameraHasCreate) {
+			try {
+				android.hardware.Camera.Parameters param;
+				param = mCamera.getParameters();
+				param.setPictureFormat(ImageFormat.JPEG);
+				param.setPreviewSize(1280, 720);
+				param.set("rotation", 90);
+				mCamera.setDisplayOrientation(90);
+				mCamera.setParameters(param);
+				mCamera.setPreviewDisplay(sh);
+				mCamera.startPreview();
+			}catch(Exception e) {
+				Log.d(TestTAG, "catch in initCamera:" + e.getMessage());
+			}
+			cameraHasCreate = true;
+		}
+	}
+	
 	
 	// 图片收发后与原页面做互动
 	@SuppressLint("HandlerLeak")

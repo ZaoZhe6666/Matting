@@ -2,6 +2,7 @@ package com.example.matting;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,12 +15,15 @@ import java.util.Locale;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Camera;
+import android.graphics.Canvas;
 import android.graphics.ImageFormat;
+import android.graphics.Picture;
 import android.graphics.PixelFormat;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
@@ -40,30 +44,18 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
 
-public class MainActivity extends Activity implements Callback {
+public class MainActivity extends Activity{
 
 	private static final String TAG = "MainActvity";
 	private static final String TestTAG = "TestLog";
-	private File photo;
+	private static File photo;
 	public static final String LocalHost = "219.224.168.78";
 	public static int port = 5000;
 //	public static final String LocalHost = "192.168.1.106";
 //	public static int port = 8000;
 	
 	private ImageView ivImage;
-	private SurfaceView sView;
-	private SVDraw svDraw;
-	private android.hardware.Camera mCamera;
-	protected SurfaceHolder sh;
-	private boolean cameraHasCreate = false;
 	
-	private PictureCallback myPictureCallback = new PictureCallback(){
-		@Override
-		public void onPictureTaken(byte[] data, android.hardware.Camera camera) {
-			// TODO Auto-generated method stub
-			Log.d(TestTAG, "in save?");
-		}
-	};
 	
 	@SuppressLint("NewApi")
 	private void checkPermission() {
@@ -83,8 +75,6 @@ public class MainActivity extends Activity implements Callback {
             }
         }
 
-		if(Build.VERSION.SDK_INT <= 10)
-		     sh.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 	
 	
@@ -95,15 +85,12 @@ public class MainActivity extends Activity implements Callback {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.app_front);
 		ivImage = (ImageView) findViewById(R.id.ivImage);
-		sView = (SurfaceView) findViewById(R.id.previewRec);
-		svDraw = (SVDraw) findViewById(R.id.drawRec);
 		
 		ivImage.setVisibility(View.INVISIBLE);
-		svDraw.setVisibility(View.INVISIBLE);
-		sView.setVisibility(View.INVISIBLE);
 		
-		sh = sView.getHolder();
-		sh.addCallback(this);
+//		sh = sView.getHolder();
+//		sh.addCallback(this);
+//		sh.setFormat(PixelFormat.TRANSLUCENT);
 		
 		// 检查读写权限
 		checkPermission();
@@ -115,68 +102,17 @@ public class MainActivity extends Activity implements Callback {
 				
 				Log.d(TestTAG, "click camera");
 				// 打开矩形画布
-				initCamera();
-				svDraw.setVisibility(View.VISIBLE);
-				svDraw.drawRect();
-				Log.d(TestTAG, "open rect");
 				
-				
-				/*
-				
-				//切换至Camera事件
-			    Intent intent = new Intent();
-			    intent.setAction("android.media.action.IMAGE_CAPTURE");
-			    File dir = new File(Environment.getExternalStorageDirectory(), "Matting");
-			    if(dir.exists() && dir.isFile()) {
-			    	dir.delete();
-			    }
-			    if(!dir.exists()) {
-			    	dir.mkdir();
-			    }
-			    File file_list[] = dir.listFiles();
-			    String fileName = file_list.length + ".jpg";
-			    photo = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Matting" , fileName);
-			    
-			    Uri uri = Uri.fromFile(photo);
-			    intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
-			    startActivityForResult(intent, 100);
-			    */
+				Intent intent = new Intent();
+				intent.setClass(MainActivity.this, UseCameraActivity.class);
+				startActivityForResult(intent, 100);
 			}
 		});
 		
-		//选择相册选择按钮
+		// 从图库上传
 		Button btn_photo = (Button)findViewById(R.id.btn_photo);
-		
-		btn_photo.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				//切换至Choose Photo事件
-				Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-				
-				File dir = new File(Environment.getExternalStorageDirectory(), "Matting");
-			    if(dir.exists() && dir.isFile()) {
-			    	dir.delete();
-			    }
-			    if(!dir.exists()) {
-			    	dir.mkdir();
-			    }
-			    
-			    File file_list[] = dir.listFiles();
-			    String fileName = file_list.length + ".jpg";
-			    photo = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Matting" , fileName);
-				Log.d(TestTAG, photo.getAbsolutePath());
-				
-				
-				
-				Uri uri = Uri.fromFile(photo);
-				intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
-				startActivityForResult(intent, 200);
-			}
-		});
-		
-		//查看已上传图集
-		Button btn_Album = (Button)findViewById(R.id.btn_album);
 
-		btn_Album.setOnClickListener(new OnClickListener() {
+		btn_photo.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				//切换至查看已有相册事件
 				File dir = new File(Environment.getExternalStorageDirectory(), "Matting");
@@ -191,7 +127,27 @@ public class MainActivity extends Activity implements Callback {
 				intent.setData(uri);
 				intent.setType("image/*");
 				startActivityForResult(intent, 300);
-				Log.d(TestTAG, "End upload and download!");
+			}
+		});
+		
+
+		// 查看Matting文件夹
+		Button btn_Album = (Button)findViewById(R.id.btn_album);
+		
+		btn_Album.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				File dir = new File(Environment.getExternalStorageDirectory(), "Matting");
+			    if(dir.exists() && dir.isFile()) {
+			    	dir.delete();
+			    }
+			    if(!dir.exists()) {
+			    	dir.mkdir();
+			    }
+				Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+				Uri uri = Uri.fromFile(new File(Environment.getExternalStorageDirectory(), "Matting"));
+				intent.setData(uri);
+				intent.setType("image/*");
+				startActivityForResult(intent, 400);
 			}
 		});
 		
@@ -209,14 +165,18 @@ public class MainActivity extends Activity implements Callback {
 	@Override
 	protected void onActivityResult(int requestCode, int result, Intent data) {
 		Log.d(TestTAG, "requeseCode = " + requestCode);
-		if(result == -1 && (requestCode == 100 || requestCode == 200)) {//拍照/图库选择
+		if(requestCode == 100 || requestCode == 200) {// 拍照
 			Log.d(TestTAG, "deal the camera/select");
+			// 插入系统图库
+			try {
+				MediaStore.Images.Media.insertImage(null, photo.getAbsolutePath(), photo.getName(), null);
+			} catch (FileNotFoundException e) {}
+			
 			Uri uri = Uri.fromFile(photo);
 			Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
 			intent.setData(uri);
-			this.sendBroadcast(intent);
 			Log.d(TestTAG, "deal ok");
-			return;
+			sendBroadcast(intent);
 		}
 		if(result == -1 && requestCode == 300) { 
 			
@@ -235,32 +195,6 @@ public class MainActivity extends Activity implements Callback {
 			intent.setAction(android.content.Intent.ACTION_VIEW);
 			intent.setDataAndType(uri, "image/*");
 			startActivity(intent);
-		}
-	}
-	
-	// 初始化相机
-	// 参考资料https://blog.csdn.net/yanzi1225627/article/details/7926994
-	@SuppressWarnings("deprecation")
-	public void initCamera() {
-		if(mCamera == null && !cameraHasCreate) {
-			mCamera = android.hardware.Camera.open();
-			Log.d(TestTAG, "camera open");
-		}
-		if(mCamera != null && !cameraHasCreate) {
-			try {
-				android.hardware.Camera.Parameters param;
-				param = mCamera.getParameters();
-				param.setPictureFormat(ImageFormat.JPEG);
-				param.setPreviewSize(1280, 720);
-				param.set("rotation", 90);
-				mCamera.setDisplayOrientation(90);
-				mCamera.setParameters(param);
-				mCamera.setPreviewDisplay(sh);
-				mCamera.startPreview();
-			}catch(Exception e) {
-				Log.d(TestTAG, "catch in initCamera:" + e.getMessage());
-			}
-			cameraHasCreate = true;
 		}
 	}
 	
@@ -389,6 +323,9 @@ public class MainActivity extends Activity implements Callback {
 		
 	}
 	
+	public static void setPhoto(File file) {
+		photo = file;
+	}
 	
 	
 	public void callCamera(View view) {
@@ -399,27 +336,4 @@ public class MainActivity extends Activity implements Callback {
 		Log.d(TAG, "view the photo ...");
 	}
 
-
-
-	@Override
-	public void surfaceCreated(SurfaceHolder holder) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		// TODO Auto-generated method stub
-		
-	}
 }

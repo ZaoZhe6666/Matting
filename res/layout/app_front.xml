@@ -29,7 +29,7 @@
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_alignParentRight="true"
-	        android:text="查看已上传图集"
+	        android:text="查看Matting图集"
 	        android:textSize="30sp"/>
 	</LinearLayout>
 
@@ -42,26 +42,6 @@
 	    android:layout_alignParentRight="true"
 	    android:layout_alignParentTop="true"
 	    android:layout_gravity="center_horizontal" />
-	
-	<FrameLayout
-	    android:id="@+id/myFramelayout"
-        android:layout_width="fill_parent"
-        android:layout_height="800px"
-        android:orientation="vertical" >
-
-        <SurfaceView
-            android:id="@+id/previewRec"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent" 
-            android:layout_gravity="center"
-            android:visibility="visible"/>
-        
-        <com.example.matting.SVDraw
-             android:id="@+id/drawRec"
-             android:layout_width="fill_parent"
-             android:layout_height="fill_parent"
-            />
-    </FrameLayout>
 	
     
 </RelativeLayout>

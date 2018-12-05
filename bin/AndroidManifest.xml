@@ -37,7 +37,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".ChoosePhotoActivity"></activity>
-        <activity android:name=".UseCameraActivity"></activity>
+        <activity android:name=".UseCameraActivity"
+                  android:screenOrientation="portrait"></activity>
     </application>
 
 </manifest>

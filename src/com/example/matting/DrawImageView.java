@@ -24,9 +24,9 @@ public class DrawImageView extends ImageView{
 		paint.setAlpha(100);
 	};
 	
-	@Override
-	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
+	
+	protected void myDraw(Canvas canvas) {
+		
 		canvas.drawRect(new Rect(100, 200, 400, 500), paint);
 	}
 }

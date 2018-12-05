@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
@@ -9,14 +9,39 @@
         android:layout_height="wrap_content" >
 
         <SurfaceView
-            android:id="@+id/previewSV"
+            android:id="@+id/cameraSV"
             android:layout_width="fill_parent"
-            android:layout_height="800px" />
+            android:layout_height="fill_parent"
+            android:visibility="visible" />
         
-        <com.example.matting.DrawImageView
+        <com.example.matting.SVDraw
              android:id="@+id/drawIV"
              android:layout_width="fill_parent"
-             android:layout_height="800px"
-            />
+             android:layout_height="fill_parent" />
     </FrameLayout>
-</LinearLayout>
+
+	<LinearLayout
+	    android:id="@+id/LinearLayout01"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" 
+	    android:layout_alignParentBottom="true"
+	    >
+
+	    <Button
+	        android:id="@+id/btnAddLine"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="辅助线"
+	        android:textSize="28sp" />
+
+	    <Button
+	        android:id="@+id/btnPhoto"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="拍照"
+	        android:textSize="28sp" />
+
+	</LinearLayout>
+
+</RelativeLayout>

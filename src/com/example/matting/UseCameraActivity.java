@@ -9,22 +9,30 @@ import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.PictureCallback;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.strictmode.InstanceCountViolation;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.view.SurfaceHolder;
@@ -53,6 +61,7 @@ public class UseCameraActivity extends Activity{
     private static int finalWidth = 480;
     private static int finaleHeight = 640;
 	
+	@SuppressLint("NewApi")
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,12 +91,18 @@ public class UseCameraActivity extends Activity{
 				}
 			}
 			
+			@SuppressLint("NewApi")
 			@Override
 			public void surfaceCreated(SurfaceHolder holder) {
 				Log.d(TestTag, "surface Creat");
 
 				if(Build.VERSION.SDK_INT <= 10)
 				     holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+		            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+		                requestPermissions(new String[] {Manifest.permission.CAMERA}, 1);
+		            }
+		        }
 				if(!hasCreateCamera) {
 					myCamera = Camera.open();
 				}
@@ -194,6 +209,7 @@ public class UseCameraActivity extends Activity{
 			// TODO Auto-generated method stub
 			Log.d(TestTag, "Temperary Save the Pic byte[]");
 			tmpPic = data;
+			myCamera.stopPreview();
 		}
 	};
 	
@@ -221,20 +237,38 @@ public class UseCameraActivity extends Activity{
 		    // byte数组转bitmap存储
 		    Bitmap bitmap = BitmapFactory.decodeByteArray(tmpPic, 0, tmpPic.length);
 		    BufferedOutputStream buffStream = new BufferedOutputStream(new FileOutputStream(file));
+		    Log.d(TestTag, "First Bitmap is set :" + bitmap.getWidth() + ":" + bitmap.getHeight());
+		    
+		    // bitmap 旋转
+		    Matrix matrix = new Matrix();
+		    matrix.postRotate(90);
+		    Bitmap bitmapRoute = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+		    bitmap.recycle();
+		    Log.d(TestTag, "Route Bitmap is set :" + bitmapRoute.getWidth() + ":" + bitmapRoute.getHeight());
+		    
+		    // bitmap缩放
+		    Bitmap bitmapScale = Bitmap.createScaledBitmap(bitmapRoute, SVDraw.getWindowWidth() * 2 / 3 , SVDraw.getWindowHeight() * 2 / 3, true);
+		    bitmapRoute.recycle();
+		    Log.d(TestTag, "Scale Bitmap is set :" + bitmapScale.getWidth() + ":" + bitmapScale.getHeight());
 		    
 		    // bitmap切割为480 x 640
-		    int widthBit = bitmap.getWidth();
-		    int heightBit = bitmap.getHeight();
 		    int tmpRow = 0, tmpCol = 0;
+		    int widthBit = bitmapScale.getWidth();
+		    int heightBit = bitmapScale.getHeight();
+
 		    if(widthBit >= finalWidth) {
 		    	tmpRow = widthBit / 2 - 240;
 		    	widthBit = finalWidth;
 		    }
 		    if(heightBit >= finaleHeight) {
-		    	tmpCol = heightBit / 2 - 320;
+		    	tmpCol = heightBit / 2 - 320 - 133;
 		    	heightBit = finaleHeight;
 		    }
-		    Bitmap bitmapCut = Bitmap.createBitmap(bitmap, tmpRow, tmpCol, widthBit, heightBit);
+		    
+		    // 切割目标
+		    Bitmap bitmapCut = Bitmap.createBitmap(bitmapScale, tmpRow, tmpCol, widthBit, heightBit);
+		    bitmapScale.recycle();
+		    Log.d(TestTag, "Final Bitmap is set :" + bitmapCut.getWidth() + ":" + bitmapCut.getHeight());
 		    
 		    bitmapCut.compress(Bitmap.CompressFormat.JPEG, 100, buffStream);
 		    buffStream.flush();

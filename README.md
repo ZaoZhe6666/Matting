@@ -16,3 +16,8 @@ The Application for Matting(A GAN trans photo to identification photo)
 - 调用本机相机时，在取景框中添加矩形及人脸型框
 - 调用本机相机时，最终仅保留取景框中结果
 - 取消了Version 0 中功能2，改为查看Matting图库
+
+### Version 3：
+- 修复了4.4以上版本真机测试失败bug
+- 优化取景框
+- 优化真机测试保留取景框结果功能

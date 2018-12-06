@@ -22,14 +22,14 @@
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_alignParentRight="true"
-	        android:text="从相册选择"
+	        android:text="联网获取结果"
 	        android:textSize="30sp"/>
 	    <Button
 	        android:id="@+id/btn_album"
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_alignParentRight="true"
-	        android:text="查看Matting图集"
+	        android:text="查看相册"
 	        android:textSize="30sp"/>
 	</LinearLayout>
 

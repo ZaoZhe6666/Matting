@@ -101,9 +101,9 @@ public class MainActivity extends Activity{
 			public void onClick(View v) {
 				
 				Log.d(TestTAG, "click camera");
-				// 打开矩形画布
 				
 				Intent intent = new Intent();
+				intent.putExtra("android.intent.extras.CAMERA_FACING", 1);
 				intent.setClass(MainActivity.this, UseCameraActivity.class);
 				startActivityForResult(intent, 100);
 			}
@@ -136,17 +136,15 @@ public class MainActivity extends Activity{
 		
 		btn_Album.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				File dir = new File(Environment.getExternalStorageDirectory(), "Matting");
-			    if(dir.exists() && dir.isFile()) {
-			    	dir.delete();
+				
+				String intentact = "";
+			    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {//4.4版本前
+			        intentact = Intent.ACTION_PICK;
+			    } else {//4.4版本后
+			        intentact = Intent.ACTION_GET_CONTENT;
 			    }
-			    if(!dir.exists()) {
-			    	dir.mkdir();
-			    }
-				Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-				Uri uri = Uri.fromFile(new File(Environment.getExternalStorageDirectory(), "Matting"));
-				intent.setData(uri);
-				intent.setType("image/*");
+			    Intent intent = new Intent(intentact);
+			    intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
 				startActivityForResult(intent, 400);
 			}
 		});
@@ -174,6 +172,8 @@ public class MainActivity extends Activity{
 			
 			Uri uri = Uri.fromFile(photo);
 			Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+	        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 			intent.setData(uri);
 			Log.d(TestTAG, "deal ok");
 			sendBroadcast(intent);

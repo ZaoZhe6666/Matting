@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFE0"
+    android:id="@+id/app_front"
     android:orientation="vertical" >
     
 	<LinearLayout 
@@ -31,6 +32,13 @@
 	        android:layout_alignParentRight="true"
 	        android:text="查看相册"
 	        android:textSize="30sp"/>
+	     <Button
+	        android:id="@+id/btn_set_port"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentRight="true"
+	        android:text="参数设置"
+	        android:textSize="30sp"/>
 	</LinearLayout>
 
 	<ImageView
@@ -42,6 +50,5 @@
 	    android:layout_alignParentRight="true"
 	    android:layout_alignParentTop="true"
 	    android:layout_gravity="center_horizontal" />
-	
     
 </RelativeLayout>

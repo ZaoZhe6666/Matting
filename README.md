@@ -21,3 +21,9 @@ The Application for Matting(A GAN trans photo to identification photo)
 - 修复了4.4以上版本真机测试失败bug
 - 优化取景框
 - 优化真机测试保留取景框结果功能
+
+### Version 4：
+- 修复图像拍摄压缩成椭圆问题
+- 添加了修改服务器及端口号功能
+- 添加了背景色号的交互
+- 优化了修改框的提示功能

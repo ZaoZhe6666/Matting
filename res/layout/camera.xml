@@ -24,16 +24,15 @@
 	    android:id="@+id/LinearLayout01"
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
-	    android:orientation="horizontal" 
 	    android:layout_alignParentBottom="true"
-	    >
+	    android:layout_centerHorizontal="true" >
 
-	    <Button
-	        android:id="@+id/btnAddLine"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="辅助线"
-	        android:textSize="28sp" />
+		<Button
+		    android:id="@+id/btnAddLine"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:text="辅助线"
+		    android:textSize="28sp" />
 
 	    <Button
 	        android:id="@+id/btnPhoto"
@@ -41,7 +40,6 @@
 	        android:layout_height="wrap_content"
 	        android:text="拍照"
 	        android:textSize="28sp" />
-
 	</LinearLayout>
 
 </RelativeLayout>

@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Locale;
 
 import android.Manifest;
@@ -28,7 +29,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.strictmode.InstanceCountViolation;
 import android.provider.MediaStore;
+import android.provider.Telephony.Mms.Rate;
 import android.util.Log;
+import android.util.Rational;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -44,7 +47,7 @@ public class UseCameraActivity extends Activity{
 	// 参考资料https://blog.csdn.net/yanzi1225627/article/details/8577756
 	
 	// 页面按钮
-	private Button addRectBtn, closeBtn, takeBtn;
+	private Button addRectBtn, changeBtn, takeBtn;
 	private String TestTag = "TestLog";
 	
 	// 两层镜头相关内容
@@ -60,6 +63,8 @@ public class UseCameraActivity extends Activity{
     private byte[] tmpPic;
     private static int finalWidth = 480;
     private static int finaleHeight = 640;
+    private int optionWidth = 0;
+    private int optionHeight = 0;
 	
 	@SuppressLint("NewApi")
 	@Override
@@ -179,17 +184,23 @@ public class UseCameraActivity extends Activity{
 				}
 			}
 		});
+        
     }
 
 	// 初始化相机
+	// 参考资料https://blog.csdn.net/u012539700/article/details/79889348
 	public void initCamera() {
 		if(null != myCamera && !hasCreateCamera) {
 			Camera.Parameters parameters = myCamera.getParameters();
 			
 			parameters.setPictureFormat(PixelFormat.JPEG);
 			
+			List<Camera.Size> sizeList = parameters.getSupportedPreviewSizes();
+			Camera.Size optionSize = getPreviewSize(sizeList, mySurfaceView.getHeight(), mySurfaceView.getWidth());
 //			parameters.setPictureSize(480, 640);
-//			parameters.setPreviewSize(480, 640);
+			parameters.setPreviewSize(optionSize.width, optionSize.height);
+			optionWidth = optionSize.width;
+			optionHeight = optionSize.height;
 			
 			myCamera.setDisplayOrientation(90);
 			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
@@ -201,12 +212,38 @@ public class UseCameraActivity extends Activity{
 		hasCreateCamera = true;
 	}
 	
+	// 查找相机横纵比适配结果
+	private Camera.Size getPreviewSize(List<Camera.Size> sizes, int width, int height){
+		final double TOLERANCE = 0.1;
+		double targetRatio = (double) width / height;
+		Camera.Size res = null;
+		double minDiff = Double.MAX_VALUE;
+		
+		for(Camera.Size size : sizes) {
+			double ratio = (double) size.width / size.height;
+			if(Math.abs(ratio - targetRatio) > TOLERANCE) continue;
+			if(Math.abs(ratio - targetRatio) < minDiff) {
+				minDiff = Math.abs(ratio - targetRatio);
+				res = size;
+			}
+		}
+		
+		if(res == null) {
+			for(Camera.Size size : sizes) {
+				if(Math.abs(size.height - height) < minDiff) {
+					res = size;
+					minDiff = Math.abs(size.height - height);
+				}
+			}
+		}
+		return res;
+	}
+	
 	// 临时存储拍摄结果
 	PictureCallback myJpegCallback = new PictureCallback() {
 		
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
-			// TODO Auto-generated method stub
 			Log.d(TestTag, "Temperary Save the Pic byte[]");
 			tmpPic = data;
 			myCamera.stopPreview();
@@ -245,32 +282,40 @@ public class UseCameraActivity extends Activity{
 		    Bitmap bitmapRoute = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
 		    bitmap.recycle();
 		    Log.d(TestTag, "Route Bitmap is set :" + bitmapRoute.getWidth() + ":" + bitmapRoute.getHeight());
-		    
-		    // bitmap缩放
-		    Bitmap bitmapScale = Bitmap.createScaledBitmap(bitmapRoute, SVDraw.getWindowWidth() * 2 / 3 , SVDraw.getWindowHeight() * 2 / 3, true);
-		    bitmapRoute.recycle();
-		    Log.d(TestTag, "Scale Bitmap is set :" + bitmapScale.getWidth() + ":" + bitmapScale.getHeight());
-		    
-		    // bitmap切割为480 x 640
-		    int tmpRow = 0, tmpCol = 0;
-		    int widthBit = bitmapScale.getWidth();
-		    int heightBit = bitmapScale.getHeight();
 
-		    if(widthBit >= finalWidth) {
-		    	tmpRow = widthBit / 2 - 240;
-		    	widthBit = finalWidth;
+		    // bitmap切割目标区域
+		    int tmpRow = 0, tmpCol = 0;
+		    int widthBit = bitmapRoute.getWidth();
+		    int heightBit = bitmapRoute.getHeight();
+		    double ratio = (double) widthBit / SVDraw.getWindowWidth();
+		    Log.d(TestTag, "Option Size —— " + optionWidth + ":" + optionHeight);
+		    Log.d(TestTag, "SVD Size —— " + SVDraw.getWindowWidth() + ":" + SVDraw.getWindowHeight());
+		    Log.d(TestTag, "Bitmap Size —— " + widthBit + ":" + heightBit);
+		    Log.d(TestTag, "Cut ratio:" + ratio);
+
+		    // 从图片中切框选内容 720:960
+		    if(widthBit >= (int)(720 * ratio)) {
+		    	tmpRow = widthBit / 2 - (int)(360 * ratio);
+		    	widthBit = (int)(finalWidth * ratio * 1.5);
 		    }
-		    if(heightBit >= finaleHeight) {
-		    	tmpCol = heightBit / 2 - 320 - 133;
-		    	heightBit = finaleHeight;
+		    if(heightBit >= (int)(960 * ratio + 500)) {
+		    	tmpCol = heightBit / 2 - (int)(480 * ratio + 250);
+		    	heightBit = (int)(finaleHeight * ratio * 1.5);
 		    }
+		    
 		    
 		    // 切割目标
-		    Bitmap bitmapCut = Bitmap.createBitmap(bitmapScale, tmpRow, tmpCol, widthBit, heightBit);
-		    bitmapScale.recycle();
+		    Bitmap bitmapCut = Bitmap.createBitmap(bitmapRoute, tmpRow, tmpCol, widthBit, heightBit);
+		    bitmapRoute.recycle();
 		    Log.d(TestTag, "Final Bitmap is set :" + bitmapCut.getWidth() + ":" + bitmapCut.getHeight());
+		   
+		    // bitmap缩放
+		    Bitmap bitmapScale = Bitmap.createScaledBitmap(bitmapCut, 480 , 640, true);
+		    bitmapCut.recycle();
+		    Log.d(TestTag, "Scale Bitmap is set :" + bitmapScale.getWidth() + ":" + bitmapScale.getHeight());
 		    
-		    bitmapCut.compress(Bitmap.CompressFormat.JPEG, 100, buffStream);
+		    
+		    bitmapScale.compress(Bitmap.CompressFormat.JPEG, 100, buffStream);
 		    buffStream.flush();
 		    buffStream.close();
 		    
@@ -282,3 +327,4 @@ public class UseCameraActivity extends Activity{
 		}
 	}
 }
+ 

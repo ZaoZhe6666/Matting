@@ -70,6 +70,10 @@ public class Upload {
 			// 创建Socket的OutputStream用于发送数据
 			OutputStream outputConnect = socket.getOutputStream();
 			
+			// 发送背景色号
+			outputConnect.write(MainActivity.Color.getBytes());
+			outputConnect.flush();
+			
 			// 发送文件大小
 			long fileSize = inputFile.available();
 			String fileSizeStr = fileSize + "";
@@ -96,6 +100,27 @@ public class Upload {
 			// 创建Socket的InputStream用来接收数据
 			InputStream inputConnect = socket.getInputStream();
 			Log.d(TestTAG, "break1");
+			
+			// 接收合法性信息
+		    byte symCodeBuff[] = new byte[10];
+		    int symCode = inputConnect.read(symCodeBuff);
+		    if(symCode == 1) { // 色号错误
+		    	
+		    }
+		    else if(symCode == 2) { // 原始图片有误
+		    	
+		    }
+		    else if(symCode == 3) { // 未检测到人脸
+		    	
+		    }
+			
+		    if(symCode != 0) {
+		    	inputConnect.close();
+		    	outputConnect.close();
+				socket.close();
+				return "" + symCode;
+		    }
+			
 			// 定位输出路径
 			File dir = new File(Environment.getExternalStorageDirectory(), "Matting");
 		    if(dir.exists() && dir.isFile()) {
@@ -114,6 +139,7 @@ public class Upload {
 		    Log.d(TestTAG, "break2");
 		    FileOutputStream outputStream = new FileOutputStream(filePath);
 		    Log.d(TestTAG, "break3");
+		    
 		    
 		    // 读取接收文件大小
 		    byte piclenBuff[] = new byte[200];
@@ -137,6 +163,7 @@ public class Upload {
 			}
 			Log.d(TestTAG, "yeah");
 			inputConnect.close();
+			outputConnect.close();
 			outputStream.close();
 			
 			// 关闭连接

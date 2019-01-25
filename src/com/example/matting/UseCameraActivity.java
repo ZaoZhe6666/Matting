@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
@@ -57,6 +58,10 @@ public class UseCameraActivity extends Activity{
     private Camera myCamera = null;
     private boolean hasCreateCamera = false;
     
+    private int frontIndex = -1;
+    private int backIndex = -1;
+    private int cameraIndex = 0;
+    
     private boolean startLine = false;
     private boolean Retake = false;
     
@@ -65,12 +70,14 @@ public class UseCameraActivity extends Activity{
     private static int finaleHeight = 640;
     private int optionWidth = 0;
     private int optionHeight = 0;
+    
 	
 	@SuppressLint("NewApi")
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TestTag, "in Use Camera Activity");
+        
         // 取消标题
 //        requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
         setContentView(R.layout.camera);
@@ -108,8 +115,19 @@ public class UseCameraActivity extends Activity{
 		                requestPermissions(new String[] {Manifest.permission.CAMERA}, 1);
 		            }
 		        }
+
+		        // 初始化查找可用摄像头（前后置）
+		        searchCamera();
+		        
 				if(!hasCreateCamera) {
-					myCamera = Camera.open();
+					if(backIndex != -1) {
+						myCamera = Camera.open(backIndex);
+						cameraIndex = backIndex;
+					}
+					else {
+						myCamera = Camera.open();
+						cameraIndex = 0;
+					}
 				}
 				try {
 					myCamera.setPreviewDisplay(mySurfaceHolder);
@@ -143,6 +161,7 @@ public class UseCameraActivity extends Activity{
 						myCamera.takePicture(null, null, myJpegCallback);
 						takeBtn.setText("保存");
 						addRectBtn.setText("重拍");
+						changeBtn.setVisibility(View.GONE);
 						Retake = true;
 					}
 				}
@@ -167,6 +186,7 @@ public class UseCameraActivity extends Activity{
 					else {
 						addRectBtn.setText("辅助线");
 					}
+					changeBtn.setVisibility(View.VISIBLE);
 					takeBtn.setText("拍照");
 					myCamera.startPreview();
 				}
@@ -185,12 +205,21 @@ public class UseCameraActivity extends Activity{
 			}
 		});
         
+     // 绑定切换按钮
+        changeBtn = (Button) findViewById(R.id.btnChange);
+        changeBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				changeCamera();
+			}
+		});
+        
     }
 
 	// 初始化相机
 	// 参考资料https://blog.csdn.net/u012539700/article/details/79889348
 	public void initCamera() {
-		if(null != myCamera && !hasCreateCamera) {
+		if(null != myCamera && !hasCreateCamera && cameraIndex == backIndex) {
 			Camera.Parameters parameters = myCamera.getParameters();
 			
 			parameters.setPictureFormat(PixelFormat.JPEG);
@@ -207,9 +236,70 @@ public class UseCameraActivity extends Activity{
 			myCamera.setParameters(parameters);
 			Log.d(TestTag, "param set ok");
 			myCamera.startPreview();
-			Log.d(TestTag, "preview start");
+			Log.d(TestTag, "preview start -- Back Camera");
+		}
+		else if(null != myCamera && !hasCreateCamera && cameraIndex == frontIndex) {
+			myCamera.startPreview();
+			Log.d(TestTag, "preview start -- Front Camera");
 		}
 		hasCreateCamera = true;
+	}
+	
+	// 切换摄像头
+	public void changeCamera() {
+		Log.d(TestTag, "in change camera ");
+    	
+    	if(myCamera != null) {
+            myCamera.stopPreview();
+            Log.d(TestTag, "stop success");
+            myCamera.release();
+            Log.d(TestTag, "release success");
+            myCamera = null;
+    	}
+        
+        int cameraNext = 0;
+        if(cameraIndex == frontIndex && backIndex != -1) {
+        	cameraNext = backIndex;
+        }
+        else if(cameraIndex == backIndex && frontIndex != -1) {
+        	cameraNext = frontIndex;
+        }
+        
+        myCamera = Camera.open(cameraNext);
+        cameraIndex = cameraNext;
+        Log.d(TestTag, "open success");
+
+    	hasCreateCamera = false;
+    	initCamera();
+    	
+    	try {
+			myCamera.setPreviewDisplay(mySurfaceHolder);
+		} catch (IOException e) {
+	    	Log.d(TestTag, "set preview display FAIL! :" + e.getMessage());
+		}
+    	Log.d(TestTag, "set preview display");
+	}
+	
+	// 遍历查找前后置摄像头
+	@SuppressLint("NewApi")
+	private void searchCamera() {
+		Log.d(TestTag, "search Local Camera");
+		CameraInfo info = new CameraInfo();
+		int cameraCount = Camera.getNumberOfCameras();
+		Log.d(TestTag, "get cameraCount :" + cameraCount);
+        for(int i = 0; i < cameraCount; i++){
+            Camera.getCameraInfo(i, info);
+            Log.d(TestTag, "info facing:" + info.facing);
+            Log.d(TestTag, "front facing:" + CameraInfo.CAMERA_FACING_FRONT);
+            Log.d(TestTag , "back facing:" + CameraInfo.CAMERA_FACING_BACK);
+            if(info.facing == CameraInfo.CAMERA_FACING_FRONT){
+                frontIndex = i;
+            }else if(info.facing == CameraInfo.CAMERA_FACING_BACK){
+                backIndex = i;
+            }
+        }
+        
+        return;
 	}
 	
 	// 查找相机横纵比适配结果

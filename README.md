@@ -27,3 +27,6 @@ The Application for Matting(A GAN trans photo to identification photo)
 - 添加了修改服务器及端口号功能
 - 添加了背景色号的交互
 - 优化了修改框的提示功能
+
+### Version 5：
+- 添加了前后摄像头切换功能
